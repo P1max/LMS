@@ -1,0 +1,51 @@
+@baseUrl = http://localhost:3000
+
+### Проверка сервера
+GET {{baseUrl}}/
+
+### Получить все курсы
+GET {{baseUrl}}/courses
+
+### Фильтрация по статусу и поиск
+GET {{baseUrl}}/courses?status=published&search=web
+
+### Получить курс по ID
+GET {{baseUrl}}/courses/1
+
+### Создать курс (после перезапуска он получит ID 3)
+POST {{baseUrl}}/courses
+Content-Type: application/json
+
+{
+  "title": "Электронный журнал",
+  "description": "Оценки и посещаемость",
+  "teacher": "Елена Волкова",
+  "durationHours": 40,
+  "status": "draft"
+}
+
+### Полностью обновить созданный курс
+PUT {{baseUrl}}/courses/3
+Content-Type: application/json
+
+{
+  "title": "Электронный журнал",
+  "description": "Оценки, расписание и посещаемость",
+  "teacher": "Елена Волкова",
+  "durationHours": 44,
+  "status": "published"
+}
+
+### Удалить созданный курс
+DELETE {{baseUrl}}/courses/3
+
+### Проверить ошибку 404 после удаления
+GET {{baseUrl}}/courses/3
+
+### Проверить ошибку 400
+POST {{baseUrl}}/courses
+Content-Type: application/json
+
+{
+  "title": ""
+}
