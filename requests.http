@@ -1,4 +1,34 @@
 @baseUrl = http://localhost:3000
+@token = paste-token-here
+
+### Зарегистрировать студента
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "student@lms.local",
+  "password": "Student123!"
+}
+
+### Войти администратором (пароль из seed)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@lms.local",
+  "password": "Admin123!"
+}
+
+### Получить профиль текущего пользователя
+GET {{baseUrl}}/profile
+Authorization: Bearer {{token}}
+
+### Получить пользователей (только для роли admin)
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{token}}
+
+### Проверить защиту профиля без токена
+GET {{baseUrl}}/profile
 
 ### Проверка сервера
 GET {{baseUrl}}/

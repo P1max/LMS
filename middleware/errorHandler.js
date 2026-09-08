@@ -14,7 +14,9 @@ function errorHandler(err, req, res, _next) {
   }
 
   if (err.name === 'SequelizeUniqueConstraintError') {
-    return res.status(409).json({ error: 'Course already exists' });
+    return res.status(409).json({
+      error: err.fields?.email ? 'Email already registered' : 'Resource already exists',
+    });
   }
 
   console.error(err);
