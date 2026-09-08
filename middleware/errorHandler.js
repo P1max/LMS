@@ -9,6 +9,14 @@ function errorHandler(err, req, res, _next) {
     return res.status(400).json({ error: 'Invalid JSON in request body' });
   }
 
+  if (err.name === 'SequelizeValidationError') {
+    return res.status(400).json({ error: err.errors[0].message });
+  }
+
+  if (err.name === 'SequelizeUniqueConstraintError') {
+    return res.status(409).json({ error: 'Course already exists' });
+  }
+
   console.error(err);
 
   return res.status(err.status || 500).json({
