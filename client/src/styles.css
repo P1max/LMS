@@ -59,6 +59,7 @@ button.danger:hover {
 .page-header,
 .toolbar,
 .course-title-row,
+.user-panel,
 .item-actions,
 .form-actions {
   display: flex;
@@ -100,6 +101,10 @@ h2 {
   color: #4b5563;
 }
 
+.user-panel {
+  color: #4b5563;
+}
+
 .card {
   margin-bottom: 24px;
   padding: 24px;
@@ -113,6 +118,17 @@ h2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.login-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.login-form input {
+  flex: 1 1 220px;
 }
 
 label {
@@ -212,6 +228,39 @@ textarea {
   text-align: center;
 }
 
+.loading-message,
+.success-message,
+.error-message {
+  margin-bottom: 12px;
+}
+
+.loading-message {
+  color: #2563eb;
+}
+
+.success-message {
+  color: #166534;
+}
+
+.error-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fef2f2;
+}
+
+.error-message {
+  color: #b91c1c;
+}
+
+.error-box .error-message {
+  margin-bottom: 0;
+}
+
 @media (max-width: 700px) {
   .course-form {
     grid-template-columns: 1fr;
@@ -235,5 +284,10 @@ textarea {
 
   .item-actions {
     justify-content: flex-end;
+  }
+
+  .user-panel {
+    align-items: flex-end;
+    flex-direction: column;
   }
 }
