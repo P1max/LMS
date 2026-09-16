@@ -3,8 +3,10 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courseRoutes');
 const userRoutes = require('./routes/userRoutes');
+const mongoCourseRoutes = require('./mongo/routes/courseRoutes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 const { sequelize } = require('./models');
+const { connectMongo } = require('./mongo/db');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -14,6 +16,7 @@ app.use(cors());
 
 app.use('/auth', authRoutes);
 app.use('/', userRoutes);
+app.use('/mongo/courses', mongoCourseRoutes);
 
 app.get('/', (req, res) => {
   res.json({
@@ -34,6 +37,13 @@ async function startServer() {
     }
 
     await sequelize.authenticate();
+
+    if (process.env.MONGO_URI) {
+      await connectMongo();
+    } else {
+      console.warn('MONGO_URI is not configured; MongoDB routes are disabled.');
+    }
+
     app.listen(PORT, () => {
       console.log(`Server is running at http://localhost:${PORT}`);
     });

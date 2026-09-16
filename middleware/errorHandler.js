@@ -17,6 +17,18 @@ function errorHandler(err, req, res, _next) {
     });
   }
 
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({ error: err.message });
+  }
+
+  if (err.name === 'CastError') {
+    return res.status(400).json({ error: 'Invalid MongoDB document ID' });
+  }
+
+  if (err.name === 'MongoServerError' && err.code === 11000) {
+    return res.status(409).json({ error: 'MongoDB document already exists' });
+  }
+
   console.error(err);
 
   return res.status(err.status || 500).json({

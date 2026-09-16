@@ -83,6 +83,39 @@ DELETE {{baseUrl}}/courses/3
 ### Проверить ошибку 404 после удаления
 GET {{baseUrl}}/courses/3
 
+### MongoDB: получить курсы
+GET {{baseUrl}}/mongo/courses
+
+### MongoDB: создать курс с вложенными занятиями
+POST {{baseUrl}}/mongo/courses
+Content-Type: application/json
+
+{
+  "title": "MongoDB для LMS",
+  "description": "Документное хранение учебных данных",
+  "teacher": "Елена Волкова",
+  "durationHours": 24,
+  "status": "draft",
+  "tags": ["mongodb", "nosql"],
+  "lessons": [
+    {
+      "title": "Документы и коллекции",
+      "durationHours": 2,
+      "topics": ["BSON", "ObjectId"]
+    }
+  ]
+}
+
+### MongoDB: добавить вложенное занятие
+POST {{baseUrl}}/mongo/courses/MONGO_COURSE_ID/lessons
+Content-Type: application/json
+
+{
+  "title": "CRUD в Mongoose",
+  "durationHours": 2,
+  "topics": ["find", "create", "update", "delete"]
+}
+
 ### Проверить ошибку 400
 POST {{baseUrl}}/courses
 Content-Type: application/json
