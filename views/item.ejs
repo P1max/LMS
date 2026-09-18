@@ -1,0 +1,19 @@
+<%- include('partials/header', { title, user }) %>
+
+<a class="back-link" href="/<%= authQuery %>">← Вернуться к курсам</a>
+<article class="detail-card">
+  <div class="card-topline">
+    <span class="status status-<%= course.status %>"><%= course.status %></span>
+    <span class="course-id">Курс #<%= course.id %></span>
+  </div>
+  <h1><%= course.title %></h1>
+  <p class="lead"><%= course.description %></p>
+  <dl class="detail-meta">
+    <div><dt>Преподаватель</dt><dd><%= course.teacher %></dd></div>
+    <div><dt>Продолжительность</dt><dd><%= course.durationHours %> часов</dd></div>
+    <div><dt>Создан</dt><dd><%= formatDate(course.createdAt) %></dd></div>
+    <div><dt>Изменён</dt><dd><%= formatDate(course.updatedAt) %></dd></div>
+  </dl>
+</article>
+
+<%- include('partials/footer') %>
