@@ -1,0 +1,44 @@
+<%- include('partials/header', { title, user }) %>
+
+<a class="back-link" href="/<%= authQuery %>">← Вернуться к курсам</a>
+<section class="form-card">
+  <p class="eyebrow">Новый элемент</p>
+  <h1>Добавить курс</h1>
+  <p>Заполните поля формы, чтобы добавить курс в массив приложения.</p>
+
+  <% if (error) { %>
+    <div class="alert" role="alert"><%= error %></div>
+  <% } %>
+
+  <form method="post" action="/add<%= authQuery %>" class="course-form">
+    <label>
+      Название курса
+      <input type="text" name="title" value="<%= form.title || '' %>" required />
+    </label>
+    <label>
+      Описание
+      <textarea name="description" rows="4" required><%= form.description || '' %></textarea>
+    </label>
+    <label>
+      Преподаватель
+      <input type="text" name="teacher" value="<%= form.teacher || '' %>" required />
+    </label>
+    <div class="form-row">
+      <label>
+        Продолжительность, часов
+        <input type="number" name="durationHours" min="1" step="1" value="<%= form.durationHours || '' %>" required />
+      </label>
+      <label>
+        Статус
+        <select name="status">
+          <option value="draft" <%= (form.status || 'draft') === 'draft' ? 'selected' : '' %>>Черновик</option>
+          <option value="published" <%= form.status === 'published' ? 'selected' : '' %>>Опубликован</option>
+          <option value="archived" <%= form.status === 'archived' ? 'selected' : '' %>>Архив</option>
+        </select>
+      </label>
+    </div>
+    <button class="button button-primary" type="submit">Сохранить курс</button>
+  </form>
+</section>
+
+<%- include('partials/footer') %>

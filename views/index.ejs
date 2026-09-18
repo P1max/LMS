@@ -1,0 +1,55 @@
+<%- include('partials/header', { title, user }) %>
+
+<section class="hero">
+  <div>
+    <p class="eyebrow">Система управления обучением</p>
+    <h1>Каталог курсов</h1>
+    <p>Список учебных курсов, загруженный из серверного массива.</p>
+  </div>
+  <a class="button button-primary" href="/add<%= authQuery %>">Добавить курс</a>
+</section>
+
+<form class="filters" method="get" action="/">
+  <input type="hidden" name="auth" value="1" />
+  <label>
+    Поиск
+    <input type="search" name="search" value="<%= filters.search %>" placeholder="Название или преподаватель" />
+  </label>
+  <label>
+    Статус
+    <select name="status">
+      <option value="">Все статусы</option>
+      <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>Черновик</option>
+      <option value="published" <%= filters.status === 'published' ? 'selected' : '' %>>Опубликован</option>
+      <option value="archived" <%= filters.status === 'archived' ? 'selected' : '' %>>Архив</option>
+    </select>
+  </label>
+  <button class="button" type="submit">Применить</button>
+</form>
+
+<% if (courses.length === 0) { %>
+  <section class="empty-state">
+    <h2>Курсы не найдены</h2>
+    <p>Попробуйте изменить параметры поиска.</p>
+  </section>
+<% } else { %>
+  <section class="course-grid">
+    <% courses.forEach((course) => { %>
+      <article class="course-card">
+        <div class="card-topline">
+          <span class="status status-<%= course.status %>"><%= course.status %></span>
+          <span class="course-id">#<%= course.id %></span>
+        </div>
+        <h2><%= course.title %></h2>
+        <p><%= course.description %></p>
+        <dl class="course-meta">
+          <div><dt>Преподаватель</dt><dd><%= course.teacher %></dd></div>
+          <div><dt>Продолжительность</dt><dd><%= course.durationHours %> ч</dd></div>
+        </dl>
+        <a class="card-link" href="/item/<%= course.id %><%= authQuery %>">Подробнее →</a>
+      </article>
+    <% }) %>
+  </section>
+<% } %>
+
+<%- include('partials/footer') %>

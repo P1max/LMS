@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> | LMS</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-inner">
+        <a class="brand" href="/?auth=1">LMS Courses</a>
+        <nav class="navigation">
+          <a href="/?auth=1">Курсы</a>
+          <a href="/add?auth=1">Добавить курс</a>
+          <% if (user) { %>
+            <span class="user-badge"><%= user.name %></span>
+          <% } %>
+        </nav>
+      </div>
+    </header>
+    <main class="container page-content">
