@@ -1,5 +1,3 @@
-'use strict';
-
 const express = require('express');
 const courseRoutes = require('./routes/courseRoutes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
