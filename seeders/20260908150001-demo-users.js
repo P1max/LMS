@@ -1,16 +1,22 @@
-'use strict';
-
 const bcrypt = require('bcrypt');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
+    const [existingUsers] = await queryInterface.sequelize.query(
+      'SELECT id FROM "Users" WHERE email = :email',
+      { replacements: { email: 'admin@lms.local' } },
+    );
+
+    if (existingUsers.length > 0) {
+      return;
+    }
+
     const now = new Date();
     const passwordHash = await bcrypt.hash('Admin123!', 10);
 
     await queryInterface.bulkInsert('Users', [
       {
-        id: 1,
         email: 'admin@lms.local',
         passwordHash,
         role: 'admin',
@@ -18,16 +24,13 @@ module.exports = {
         updatedAt: now,
       },
     ]);
-
-    await queryInterface.sequelize.query(
-      `SELECT setval('"Users_id_seq"', 1, true);`,
-    );
   },
 
   async down(queryInterface) {
-    await queryInterface.bulkDelete('Users', null, {});
-    await queryInterface.sequelize.query(
-      `ALTER SEQUENCE "Users_id_seq" RESTART WITH 1;`,
+    await queryInterface.bulkDelete(
+      'Users',
+      { email: 'admin@lms.local' },
+      {},
     );
   },
 };

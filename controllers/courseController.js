@@ -1,5 +1,3 @@
-'use strict';
-
 const { Op } = require('sequelize');
 const { Course } = require('../models');
 

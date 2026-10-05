@@ -1,5 +1,3 @@
-'use strict';
-
 const express = require('express');
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courseRoutes');
