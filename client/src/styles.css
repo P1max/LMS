@@ -147,7 +147,14 @@ textarea {
 }
 
 .toolbar input {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+
+.toolbar select {
+  flex: 0 0 220px;
+  width: 220px;
 }
 
 .course-list {
@@ -218,6 +225,12 @@ textarea {
   .course-item {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .toolbar input,
+  .toolbar select {
+    flex: initial;
+    width: 100%;
   }
 
   .item-actions {

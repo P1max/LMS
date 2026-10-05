@@ -10,6 +10,15 @@ Content-Type: application/json
   "password": "Student123!"
 }
 
+### Войти студентом
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "student@lms.local",
+  "password": "Student123!"
+}
+
 ### Войти администратором (пароль из seed)
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
