@@ -87,6 +87,30 @@ function update(id, data) {
   return course;
 }
 
+function patch(id, data) {
+  const index = courses.findIndex((course) => course.id === id);
+  if (index === -1) {
+    return null;
+  }
+
+  const currentCourse = courses[index];
+  const course = {
+    ...currentCourse,
+    ...data,
+    title: data.title === undefined ? currentCourse.title : data.title.trim(),
+    description:
+      data.description === undefined
+        ? currentCourse.description
+        : data.description.trim(),
+    teacher:
+      data.teacher === undefined ? currentCourse.teacher : data.teacher.trim(),
+    updatedAt: new Date(),
+  };
+
+  courses[index] = course;
+  return course;
+}
+
 function remove(id) {
   const index = courses.findIndex((course) => course.id === id);
   if (index === -1) {
@@ -97,4 +121,4 @@ function remove(id) {
   return true;
 }
 
-module.exports = { getAll, getById, create, update, remove };
+module.exports = { getAll, getById, create, update, patch, remove };

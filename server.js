@@ -4,6 +4,7 @@ const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courseRoutes');
 const pageRoutes = require('./routes/pageRoutes');
 const userRoutes = require('./routes/userRoutes');
+const apiRoutes = require('./routes/apiRoutes');
 const requestLogger = require('./middleware/requestLogger');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 const { sequelize } = require('./models');
@@ -22,6 +23,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/auth', authRoutes);
 app.use('/', pageRoutes);
 app.use('/', userRoutes);
+app.use('/api/v1', apiRoutes);
 app.use('/courses', courseRoutes);
 
 app.use(notFoundHandler);

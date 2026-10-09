@@ -81,3 +81,133 @@ Content-Type: application/json
 {
   "title": ""
 }
+
+### ПЗ2: получить описание API
+GET {{baseUrl}}/api/v1
+
+### ПЗ2: получить курсы с фильтрами
+GET {{baseUrl}}/api/v1/courses?status=published&search=web
+
+### ПЗ2: получить курс по ID
+GET {{baseUrl}}/api/v1/courses/1
+
+### ПЗ2: создать курс (при чистом запуске его ID будет 3)
+POST {{baseUrl}}/api/v1/courses
+Content-Type: application/json
+
+{
+  "title": "Система управления обучением",
+  "description": "Расписание, оценки и посещаемость",
+  "teacher": "Елена Волкова",
+  "durationHours": 40,
+  "status": "draft"
+}
+
+### ПЗ2: полностью заменить созданный курс
+PUT {{baseUrl}}/api/v1/courses/3
+Content-Type: application/json
+
+{
+  "title": "Система управления обучением",
+  "description": "Курсы, расписание и оценки",
+  "teacher": "Елена Волкова",
+  "durationHours": 44,
+  "status": "published"
+}
+
+### ПЗ2: изменить только описание курса
+PATCH {{baseUrl}}/api/v1/courses/3
+Content-Type: application/json
+
+{
+  "description": "Курсы, расписание, оценки и посещаемость"
+}
+
+### ПЗ2: удалить созданный курс
+DELETE {{baseUrl}}/api/v1/courses/3
+
+### ПЗ2: список студентов и поиск
+GET {{baseUrl}}/api/v1/students?search=Алексей
+
+### ПЗ2: получить студента по ID
+GET {{baseUrl}}/api/v1/students/1
+
+### ПЗ2: создать студента (при чистом запуске его ID будет 3)
+POST {{baseUrl}}/api/v1/students
+Content-Type: application/json
+
+{
+  "fullName": "Иван Петров",
+  "email": "ivan.petrov@lms.local",
+  "group": "ИТ-21"
+}
+
+### ПЗ2: полностью заменить студента
+PUT {{baseUrl}}/api/v1/students/3
+Content-Type: application/json
+
+{
+  "fullName": "Иван Петров",
+  "email": "ivan.petrov@lms.local",
+  "group": "ИТ-22"
+}
+
+### ПЗ2: частично изменить группу студента
+PATCH {{baseUrl}}/api/v1/students/3
+Content-Type: application/json
+
+{
+  "group": "ИТ-23"
+}
+
+### ПЗ2: удалить созданного студента
+DELETE {{baseUrl}}/api/v1/students/3
+
+### ПЗ2: список занятий, связанных с курсом 1
+GET {{baseUrl}}/api/v1/lessons?courseId=1
+
+### ПЗ2: получить занятие по ID
+GET {{baseUrl}}/api/v1/lessons/1
+
+### ПЗ2: создать занятие для курса 1 (при чистом запуске ID будет 3)
+POST {{baseUrl}}/api/v1/lessons
+Content-Type: application/json
+
+{
+  "courseId": 1,
+  "title": "Основы CSS",
+  "description": "Селекторы, свойства и каскад",
+  "orderNumber": 2,
+  "durationMinutes": 90
+}
+
+### ПЗ2: полностью заменить занятие
+PUT {{baseUrl}}/api/v1/lessons/3
+Content-Type: application/json
+
+{
+  "courseId": 1,
+  "title": "Основы CSS и адаптивная вёрстка",
+  "description": "Стилизация и адаптация страницы",
+  "orderNumber": 2,
+  "durationMinutes": 100
+}
+
+### ПЗ2: частично изменить длительность занятия
+PATCH {{baseUrl}}/api/v1/lessons/3
+Content-Type: application/json
+
+{
+  "durationMinutes": 110
+}
+
+### ПЗ2: удалить созданное занятие
+DELETE {{baseUrl}}/api/v1/lessons/3
+
+### ПЗ2: ошибка валидации обязательных полей
+POST {{baseUrl}}/api/v1/students
+Content-Type: application/json
+
+{
+  "fullName": ""
+}
