@@ -1,7 +1,7 @@
 {
   "name": "lms-courses-api",
   "version": "1.0.0",
-  "description": "LMS courses API and server-rendered pages",
+  "description": "LMS REST API, authentication, and server-rendered pages",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -16,10 +16,17 @@
   "author": "Student",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
     "ejs": "^6.0.1",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.8"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "sequelize-cli": "^6.6.5"
   }
 }
