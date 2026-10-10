@@ -1,9 +1,11 @@
 'use strict';
 
 const courseModel = require('../models/courseModel');
+const COURSE_CONSTRAINTS = require('../config/courseConstraints.json');
 
-const ALLOWED_STATUSES = ['draft', 'published', 'archived'];
-const REQUIRED_FIELDS = ['title', 'description', 'teacher', 'durationHours'];
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 function formatDate(value) {
   return new Intl.DateTimeFormat('ru-RU', {
@@ -24,6 +26,8 @@ function getPageData(req) {
     user: req.user,
     authQuery: '?auth=1',
     formatDate,
+    showErrorDemo: process.env.NODE_ENV !== 'production',
+    formConstraints: COURSE_CONSTRAINTS,
   };
 }
 
@@ -68,35 +72,62 @@ function renderAddForm(req, res) {
   });
 }
 
-function validateForm(body) {
+function validateForm(body = {}) {
+  const durationInput =
+    typeof body.durationHours === 'string'
+      ? body.durationHours.trim()
+      : String(body.durationHours ?? '').trim();
+  const status = typeof body.status === 'string' ? body.status : 'draft';
   const data = {
-    title: String(body.title || '').trim(),
-    description: String(body.description || '').trim(),
-    teacher: String(body.teacher || '').trim(),
-    durationHours: Number(body.durationHours),
-    status: body.status || 'draft',
+    title: normalizeText(body.title),
+    description: normalizeText(body.description),
+    teacher: normalizeText(body.teacher),
+    durationHours: Number(durationInput),
+    status,
   };
+  const form = { ...data, durationHours: durationInput };
 
-  const missingField = REQUIRED_FIELDS.find((field) => {
-    if (field === 'durationHours') {
-      return !body.durationHours;
-    }
-    return !data[field];
-  });
+  const textFields = COURSE_CONSTRAINTS.textFields;
+  const missingField = Object.keys(textFields).find((field) => !data[field]);
 
   if (missingField) {
-    return { error: `Поле «${missingField}» обязательно для заполнения`, data };
+    return {
+      error: `Поле «${textFields[missingField].label}» обязательно для заполнения`,
+      data,
+      form,
+    };
   }
 
-  if (!Number.isFinite(data.durationHours) || data.durationHours <= 0) {
-    return { error: 'Продолжительность должна быть положительным числом', data };
+  for (const [field, constraints] of Object.entries(textFields)) {
+    if (data[field].length > constraints.maxLength) {
+      return {
+        error: `Поле «${constraints.label}» не должно превышать ${constraints.maxLength} символов`,
+        data,
+        form,
+      };
+    }
   }
 
-  if (!ALLOWED_STATUSES.includes(data.status)) {
-    return { error: 'Выбран недопустимый статус курса', data };
+  if (!durationInput) {
+    return { error: 'Поле «Продолжительность, часов» обязательно для заполнения', data, form };
   }
 
-  return { error: null, data };
+  if (
+    !Number.isFinite(data.durationHours) ||
+    data.durationHours < COURSE_CONSTRAINTS.durationHours.minimum
+  ) {
+    return {
+      error: 'Продолжительность должна быть числом не меньше нуля',
+      data,
+      form,
+    };
+  }
+
+  if (!COURSE_CONSTRAINTS.allowedStatuses.includes(data.status)) {
+    return { error: 'Выбран недопустимый статус курса', data, form };
+  }
+
+  return { error: null, data, form };
 }
 
 function addCourse(req, res) {
@@ -106,7 +137,7 @@ function addCourse(req, res) {
     return res.status(400).render('add', {
       ...getPageData(req),
       title: 'Добавление курса',
-      form: req.body,
+      form: result.form,
       error: result.error,
     });
   }
