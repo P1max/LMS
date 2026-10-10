@@ -16,6 +16,10 @@ function notFoundHandler(req, res) {
 }
 
 function errorHandler(err, req, res, _next) {
+  if (res.headersSent) {
+    return _next(err);
+  }
+
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: 'Invalid JSON in request body' });
   }

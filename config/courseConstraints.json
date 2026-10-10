@@ -1,0 +1,20 @@
+{
+  "textFields": {
+    "title": {
+      "label": "Название курса",
+      "maxLength": 100
+    },
+    "description": {
+      "label": "Описание",
+      "maxLength": 1000
+    },
+    "teacher": {
+      "label": "Имя преподавателя",
+      "maxLength": 100
+    }
+  },
+  "durationHours": {
+    "minimum": 0
+  },
+  "allowedStatuses": ["draft", "published", "archived"]
+}

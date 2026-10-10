@@ -13,20 +13,20 @@
   <form method="post" action="/add<%= authQuery %>" class="course-form">
     <label>
       Название курса
-      <input type="text" name="title" value="<%= form.title || '' %>" required />
+      <input type="text" name="title" value="<%= form.title || '' %>" maxlength="<%= formConstraints.textFields.title.maxLength %>" required />
     </label>
     <label>
       Описание
-      <textarea name="description" rows="4" required><%= form.description || '' %></textarea>
+      <textarea name="description" rows="4" maxlength="<%= formConstraints.textFields.description.maxLength %>" required><%= form.description || '' %></textarea>
     </label>
     <label>
       Преподаватель
-      <input type="text" name="teacher" value="<%= form.teacher || '' %>" required />
+      <input type="text" name="teacher" value="<%= form.teacher || '' %>" maxlength="<%= formConstraints.textFields.teacher.maxLength %>" required />
     </label>
     <div class="form-row">
       <label>
         Продолжительность, часов
-        <input type="number" name="durationHours" min="1" step="1" value="<%= form.durationHours || '' %>" required />
+        <input type="number" name="durationHours" min="<%= formConstraints.durationHours.minimum %>" step="any" value="<%= form.durationHours ?? '' %>" required />
       </label>
       <label>
         Статус
