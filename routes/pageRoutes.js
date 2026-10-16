@@ -16,7 +16,7 @@ router.get('/login', renderLogin);
 router.get(
   '/demo-error',
   (req, res, next) => {
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV !== 'production') {
       return next();
     }
     return authMiddleware(req, res, next);
