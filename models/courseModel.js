@@ -1,32 +1,99 @@
 'use strict';
 
-const courses = [
-  {
-    id: 1,
-    title: 'Web Development Basics',
-    description: 'HTML, CSS and JavaScript fundamentals',
-    teacher: 'Anna Petrova',
-    durationHours: 36,
-    status: 'published',
-    createdAt: new Date('2026-09-01T09:00:00.000Z'),
-    updatedAt: new Date('2026-09-01T09:00:00.000Z'),
-  },
-  {
-    id: 2,
-    title: 'Node.js and Express',
-    description: 'Server-side JavaScript and REST API development',
-    teacher: 'Ivan Sokolov',
-    durationHours: 48,
-    status: 'draft',
-    createdAt: new Date('2026-09-02T10:30:00.000Z'),
-    updatedAt: new Date('2026-09-02T10:30:00.000Z'),
-  },
-];
+const fs = require('fs').promises;
+const path = require('path');
 
-let nextId = 3;
+const coursesFile = path.join(__dirname, '..', 'data', 'courses.json');
+const FILE_SYSTEM_ERROR_CODES = new Set([
+  'ENOENT',
+  'EISDIR',
+  'ENOTDIR',
+  'EACCES',
+  'EPERM',
+  'EBUSY',
+  'EIO',
+]);
+let mutationQueue = Promise.resolve();
 
-function getAll({ status, search } = {}) {
-  let result = courses;
+function createCourseDataError(code, message, cause) {
+  const error = new Error(message, { cause });
+  error.code = code;
+  error.status = 500;
+  return error;
+}
+
+async function readCourses() {
+  let fileContent;
+
+  try {
+    fileContent = await fs.readFile(coursesFile, 'utf8');
+  } catch (error) {
+    if (FILE_SYSTEM_ERROR_CODES.has(error.code)) {
+      throw createCourseDataError(
+        'COURSE_DATA_UNAVAILABLE',
+        'Course data file is missing or is not an accessible regular file',
+        error,
+      );
+    }
+
+    throw error;
+  }
+
+  let courses;
+  try {
+    courses = JSON.parse(fileContent);
+  } catch (error) {
+    throw createCourseDataError(
+      'COURSE_DATA_INVALID',
+      'Course data file contains invalid JSON',
+      error,
+    );
+  }
+
+  if (!Array.isArray(courses)) {
+    throw createCourseDataError(
+      'COURSE_DATA_INVALID',
+      'Course data file must contain an array',
+    );
+  }
+
+  return courses;
+}
+
+async function writeCourses(courses) {
+  const temporaryFile = coursesFile + '.' + process.pid + '.tmp';
+  const fileContent = JSON.stringify(courses, null, 2) + '\n';
+
+  try {
+    await fs.writeFile(temporaryFile, fileContent, 'utf8');
+    await fs.rename(temporaryFile, coursesFile);
+  } catch (error) {
+    throw createCourseDataError(
+      'COURSE_DATA_UNAVAILABLE',
+      'Course data file cannot be updated',
+      error,
+    );
+  }
+}
+
+function changeCourses(change) {
+  const operation = mutationQueue.then(async () => {
+    const courses = await readCourses();
+    const result = change(courses);
+
+    if (result.changed) {
+      await writeCourses(courses);
+    }
+
+    return result.value;
+  });
+
+  mutationQueue = operation.catch(() => {});
+  return operation;
+}
+
+async function getAll({ status, search } = {}) {
+  let result = await readCourses();
 
   if (status) {
     result = result.filter((course) => course.status === status);
@@ -45,56 +112,66 @@ function getAll({ status, search } = {}) {
   return result;
 }
 
-function getById(id) {
+async function getById(id) {
+  const courses = await readCourses();
   return courses.find((course) => course.id === id);
 }
 
-function create(data) {
-  const now = new Date();
-  const course = {
-    id: nextId++,
-    title: data.title.trim(),
-    description: data.description.trim(),
-    teacher: data.teacher.trim(),
-    durationHours: data.durationHours,
-    status: data.status || 'draft',
-    createdAt: now,
-    updatedAt: now,
-  };
+async function create(data) {
+  return changeCourses((courses) => {
+    const nextId = courses.reduce((maxId, course) => Math.max(maxId, course.id), 0) + 1;
+    const now = new Date().toISOString();
+    const course = {
+      id: nextId,
+      title: data.title.trim(),
+      description: data.description.trim(),
+      teacher: data.teacher.trim(),
+      durationHours: data.durationHours,
+      status: data.status || 'draft',
+      createdAt: now,
+      updatedAt: now,
+    };
 
-  courses.push(course);
-  return course;
+    courses.push(course);
+    return { value: course, changed: true };
+  });
 }
 
-function update(id, data) {
-  const index = courses.findIndex((course) => course.id === id);
-  if (index === -1) {
-    return null;
-  }
+async function update(id, data) {
+  return changeCourses((courses) => {
+    const index = courses.findIndex((course) => course.id === id);
 
-  const course = {
-    id,
-    title: data.title.trim(),
-    description: data.description.trim(),
-    teacher: data.teacher.trim(),
-    durationHours: data.durationHours,
-    status: data.status || 'draft',
-    createdAt: courses[index].createdAt,
-    updatedAt: new Date(),
-  };
+    if (index === -1) {
+      return { value: null, changed: false };
+    }
 
-  courses[index] = course;
-  return course;
+    const course = {
+      id,
+      title: data.title.trim(),
+      description: data.description.trim(),
+      teacher: data.teacher.trim(),
+      durationHours: data.durationHours,
+      status: data.status || 'draft',
+      createdAt: courses[index].createdAt,
+      updatedAt: new Date().toISOString(),
+    };
+
+    courses[index] = course;
+    return { value: course, changed: true };
+  });
 }
 
-function remove(id) {
-  const index = courses.findIndex((course) => course.id === id);
-  if (index === -1) {
-    return false;
-  }
+async function remove(id) {
+  return changeCourses((courses) => {
+    const index = courses.findIndex((course) => course.id === id);
 
-  courses.splice(index, 1);
-  return true;
+    if (index === -1) {
+      return { value: false, changed: false };
+    }
+
+    courses.splice(index, 1);
+    return { value: true, changed: true };
+  });
 }
 
 module.exports = { getAll, getById, create, update, remove };

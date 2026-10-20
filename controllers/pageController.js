@@ -2,6 +2,7 @@
 
 const courseModel = require('../models/courseModel');
 const COURSE_CONSTRAINTS = require('../config/courseConstraints.json');
+const validateSearchQuery = require('../utils/searchQuery');
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -26,31 +27,35 @@ function getPageData(req) {
     user: req.user,
     authQuery: '?auth=1',
     formatDate,
-    showErrorDemo: process.env.NODE_ENV !== 'production',
     formConstraints: COURSE_CONSTRAINTS,
   };
 }
 
-function renderHome(req, res) {
-  const courses = courseModel.getAll({
+async function renderHome(req, res) {
+  const { error, search } = validateSearchQuery(
+    req.query.search,
+    COURSE_CONSTRAINTS.search.maxLength,
+  );
+  const courses = await courseModel.getAll({
     status: req.query.status,
-    search: req.query.search,
+    search: error ? '' : search,
   });
 
-  return res.render('index', {
+  return res.status(error ? 400 : 200).render('index', {
     ...getPageData(req),
     title: 'Курсы',
     courses,
+    error,
     filters: {
-      search: req.query.search || '',
+      search: error ? '' : search,
       status: req.query.status || '',
     },
   });
 }
 
-function renderCourse(req, res) {
+async function renderCourse(req, res) {
   const id = Number(req.params.id);
-  const course = Number.isInteger(id) && id > 0 ? courseModel.getById(id) : null;
+  const course = Number.isInteger(id) && id > 0 ? await courseModel.getById(id) : null;
 
   if (!course) {
     return renderErrorPage(res, 404, `Курс с идентификатором ${req.params.id} не найден`);
@@ -77,12 +82,14 @@ function validateForm(body = {}) {
     typeof body.durationHours === 'string'
       ? body.durationHours.trim()
       : String(body.durationHours ?? '').trim();
+  const normalizedDurationInput = durationInput.replace(',', '.');
+  const validDurationFormat = /^\d+(?:[.,]\d+)?$/.test(durationInput);
   const status = typeof body.status === 'string' ? body.status : 'draft';
   const data = {
     title: normalizeText(body.title),
     description: normalizeText(body.description),
     teacher: normalizeText(body.teacher),
-    durationHours: Number(durationInput),
+    durationHours: validDurationFormat ? Number(normalizedDurationInput) : NaN,
     status,
   };
   const form = { ...data, durationHours: durationInput };
@@ -112,12 +119,29 @@ function validateForm(body = {}) {
     return { error: 'Поле «Продолжительность, часов» обязательно для заполнения', data, form };
   }
 
+  if (durationInput.length > COURSE_CONSTRAINTS.durationHours.maxInputLength) {
+    return {
+      error: `Продолжительность не должна превышать ${COURSE_CONSTRAINTS.durationHours.maxInputLength} символов`,
+      data,
+      form,
+    };
+  }
+
+  if (!validDurationFormat) {
+    return {
+      error: 'Продолжительность должна содержать только цифры и, при необходимости, десятичный разделитель',
+      data,
+      form,
+    };
+  }
+
   if (
     !Number.isFinite(data.durationHours) ||
-    data.durationHours < COURSE_CONSTRAINTS.durationHours.minimum
+    data.durationHours < COURSE_CONSTRAINTS.durationHours.minimum ||
+    data.durationHours > COURSE_CONSTRAINTS.durationHours.maximum
   ) {
     return {
-      error: 'Продолжительность должна быть числом не меньше нуля',
+      error: `Продолжительность должна быть числом от ${COURSE_CONSTRAINTS.durationHours.minimum} до ${COURSE_CONSTRAINTS.durationHours.maximum} часов`,
       data,
       form,
     };
@@ -130,7 +154,7 @@ function validateForm(body = {}) {
   return { error: null, data, form };
 }
 
-function addCourse(req, res) {
+async function addCourse(req, res) {
   const result = validateForm(req.body);
 
   if (result.error) {
@@ -142,7 +166,7 @@ function addCourse(req, res) {
     });
   }
 
-  courseModel.create(result.data);
+  await courseModel.create(result.data);
   return res.redirect('/?auth=1');
 }
 

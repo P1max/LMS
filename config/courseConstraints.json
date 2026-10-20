@@ -2,19 +2,24 @@
   "textFields": {
     "title": {
       "label": "Название курса",
-      "maxLength": 100
+      "maxLength": 30
     },
     "description": {
       "label": "Описание",
-      "maxLength": 1000
+      "maxLength": 50
     },
     "teacher": {
       "label": "Имя преподавателя",
-      "maxLength": 100
+      "maxLength": 25
     }
   },
   "durationHours": {
-    "minimum": 0
+    "minimum": 0,
+    "maximum": 10000,
+    "maxInputLength": 10
+  },
+  "search": {
+    "maxLength": 100
   },
   "allowedStatuses": ["draft", "published", "archived"]
 }
