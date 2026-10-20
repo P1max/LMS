@@ -28,6 +28,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
   const [user, setUser] = useState(() => {
@@ -82,20 +83,23 @@ function App() {
   function handleChange(event) {
     const { name, value } = event.target;
     setForm((currentForm) => ({ ...currentForm, [name]: value }));
+    setFormError('');
   }
 
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
+    setFormError('');
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setNotice('');
     setError('');
+    setFormError('');
 
     if (!form.title.trim() || !form.teacher.trim() || !form.durationHours) {
-      setError('Заполните название, преподавателя и количество часов.');
+      setFormError('Заполните название, преподавателя и количество часов.');
       return;
     }
 
@@ -134,7 +138,7 @@ function App() {
             course.id === editingId ? previousCourse : course,
           ),
         );
-        setError(getApiError(requestError));
+        setFormError(getApiError(requestError));
       } finally {
         setSaving(false);
       }
@@ -159,7 +163,7 @@ function App() {
       setCourses((currentCourses) =>
         currentCourses.filter((course) => course.id !== temporaryId),
       );
-      setError(getApiError(requestError));
+      setFormError(getApiError(requestError));
     } finally {
       setSaving(false);
     }
@@ -310,6 +314,11 @@ function App() {
               rows="2"
             />
           </label>
+          {formError && (
+            <p className="error-message wide-field" role="alert">
+              {formError}
+            </p>
+          )}
           <div className="form-actions wide-field">
             <button type="submit" disabled={saving}>
               {saving
