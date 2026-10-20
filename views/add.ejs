@@ -4,7 +4,7 @@
 <section class="form-card">
   <p class="eyebrow">Новый элемент</p>
   <h1>Добавить курс</h1>
-  <p>Заполните поля формы, чтобы добавить курс в массив приложения.</p>
+  <p>Заполните поля формы, чтобы сохранить курс в файл данных.</p>
 
   <% if (error) { %>
     <div class="alert" role="alert"><%= error %></div>
@@ -14,19 +14,23 @@
     <label>
       Название курса
       <input type="text" name="title" value="<%= form.title || '' %>" maxlength="<%= formConstraints.textFields.title.maxLength %>" required />
+      <small class="field-hint">Максимум <%= formConstraints.textFields.title.maxLength %> символов</small>
     </label>
     <label>
       Описание
       <textarea name="description" rows="4" maxlength="<%= formConstraints.textFields.description.maxLength %>" required><%= form.description || '' %></textarea>
+      <small class="field-hint">Максимум <%= formConstraints.textFields.description.maxLength %> символов</small>
     </label>
     <label>
       Преподаватель
       <input type="text" name="teacher" value="<%= form.teacher || '' %>" maxlength="<%= formConstraints.textFields.teacher.maxLength %>" required />
+      <small class="field-hint">Максимум <%= formConstraints.textFields.teacher.maxLength %> символов</small>
     </label>
     <div class="form-row">
       <label>
         Продолжительность, часов
-        <input type="number" name="durationHours" min="<%= formConstraints.durationHours.minimum %>" step="any" value="<%= form.durationHours ?? '' %>" required />
+        <input type="text" name="durationHours" inputmode="decimal" maxlength="<%= formConstraints.durationHours.maxInputLength %>" pattern="[0-9]+([.,][0-9]+)?" value="<%= form.durationHours ?? '' %>" required />
+        <small class="field-hint">Не более <%= formConstraints.durationHours.maxInputLength %> символов, от <%= formConstraints.durationHours.minimum %> до <%= formConstraints.durationHours.maximum %> часов</small>
       </label>
       <label>
         Статус

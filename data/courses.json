@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "title": "Web Development Basics",
+    "description": "HTML, CSS and JavaScript fundamentals",
+    "teacher": "Anna Petrova",
+    "durationHours": 36,
+    "status": "published",
+    "createdAt": "2026-09-01T09:00:00.000Z",
+    "updatedAt": "2026-09-01T09:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "title": "Node.js and Express",
+    "description": "Server-side JavaScript and REST API development",
+    "teacher": "Ivan Sokolov",
+    "durationHours": 48,
+    "status": "draft",
+    "createdAt": "2026-09-02T10:30:00.000Z",
+    "updatedAt": "2026-09-02T10:30:00.000Z"
+  },
+  {
+    "id": 3,
+    "title": "Геометрия",
+    "description": "Предмет геометрия",
+    "teacher": "Василий Пупкин",
+    "durationHours": 20,
+    "status": "published",
+    "createdAt": "2026-10-16T18:25:08.940Z",
+    "updatedAt": "2026-10-16T18:25:08.940Z"
+  },
+  {
+    "id": 4,
+    "title": "йцуйцузйцлулйцулйуйцлзуйцлзуйц",
+    "description": "йцубьйцуйцлдьуйдлаьзйцйцубьйцуйцлдьуйдлаьзйцйцубьй",
+    "teacher": "йцубьйцуйцлдьуйдлаьзйцйцу",
+    "durationHours": 540,
+    "status": "draft",
+    "createdAt": "2026-10-16T18:56:02.423Z",
+    "updatedAt": "2026-10-16T18:56:02.423Z"
+  }
+]

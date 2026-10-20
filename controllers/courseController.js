@@ -1,8 +1,9 @@
 'use strict';
 
 const courseModel = require('../models/courseModel');
+const COURSE_CONSTRAINTS = require('../config/courseConstraints.json');
+const validateSearchQuery = require('../utils/searchQuery');
 
-const ALLOWED_STATUSES = ['draft', 'published', 'archived'];
 const REQUIRED_FIELDS = ['title', 'description', 'teacher', 'durationHours'];
 
 function parseId(rawId) {
@@ -32,38 +33,60 @@ function validateCourse(body, { requireAllFields }) {
     ) {
       return `Field "${field}" must be a non-empty string`;
     }
+
+    if (
+      body[field] !== undefined &&
+      body[field].length > COURSE_CONSTRAINTS.textFields[field].maxLength
+    ) {
+      return `Field "${field}" must not exceed ${COURSE_CONSTRAINTS.textFields[field].maxLength} characters`;
+    }
   }
 
   if (
     body.durationHours !== undefined &&
-    (typeof body.durationHours !== 'number' || body.durationHours <= 0)
+    (typeof body.durationHours !== 'number' ||
+      !Number.isFinite(body.durationHours) ||
+      body.durationHours < COURSE_CONSTRAINTS.durationHours.minimum ||
+      body.durationHours > COURSE_CONSTRAINTS.durationHours.maximum)
   ) {
-    return 'Field "durationHours" must be a positive number';
+    return 'Field "durationHours" must be between ' + COURSE_CONSTRAINTS.durationHours.minimum + ' and ' + COURSE_CONSTRAINTS.durationHours.maximum;
   }
 
-  if (body.status !== undefined && !ALLOWED_STATUSES.includes(body.status)) {
-    return `Field "status" must be one of: ${ALLOWED_STATUSES.join(', ')}`;
+  if (
+    body.status !== undefined &&
+    !COURSE_CONSTRAINTS.allowedStatuses.includes(body.status)
+  ) {
+    return `Field "status" must be one of: ${COURSE_CONSTRAINTS.allowedStatuses.join(', ')}`;
   }
 
   return null;
 }
 
-function getCourses(req, res) {
-  const courses = courseModel.getAll({
+async function getCourses(req, res) {
+  const { error, search } = validateSearchQuery(
+    req.query.search,
+    COURSE_CONSTRAINTS.search.maxLength,
+  );
+
+  if (error) {
+    return res.status(400).json({ error });
+  }
+
+  const courses = await courseModel.getAll({
     status: req.query.status,
-    search: req.query.search,
+    search,
   });
 
   res.status(200).json({ count: courses.length, data: courses });
 }
 
-function getCourseById(req, res) {
+async function getCourseById(req, res) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: 'Course ID must be a positive integer' });
   }
 
-  const course = courseModel.getById(id);
+  const course = await courseModel.getById(id);
   if (!course) {
     return res.status(404).json({ error: 'Course not found' });
   }
@@ -71,17 +94,17 @@ function getCourseById(req, res) {
   return res.status(200).json({ data: course });
 }
 
-function createCourse(req, res) {
+async function createCourse(req, res) {
   const validationError = validateCourse(req.body, { requireAllFields: true });
   if (validationError) {
     return res.status(400).json({ error: validationError });
   }
 
-  const course = courseModel.create(req.body);
+  const course = await courseModel.create(req.body);
   return res.status(201).location(`/courses/${course.id}`).json({ data: course });
 }
 
-function updateCourse(req, res) {
+async function updateCourse(req, res) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: 'Course ID must be a positive integer' });
@@ -92,7 +115,7 @@ function updateCourse(req, res) {
     return res.status(400).json({ error: validationError });
   }
 
-  const course = courseModel.update(id, req.body);
+  const course = await courseModel.update(id, req.body);
   if (!course) {
     return res.status(404).json({ error: 'Course not found' });
   }
@@ -100,13 +123,13 @@ function updateCourse(req, res) {
   return res.status(200).json({ data: course });
 }
 
-function deleteCourse(req, res) {
+async function deleteCourse(req, res) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: 'Course ID must be a positive integer' });
   }
 
-  const deleted = courseModel.remove(id);
+  const deleted = await courseModel.remove(id);
   if (!deleted) {
     return res.status(404).json({ error: 'Course not found' });
   }

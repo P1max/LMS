@@ -4,20 +4,16 @@
   <div>
     <p class="eyebrow">Система управления обучением</p>
     <h1>Каталог курсов</h1>
-    <p>Список учебных курсов, загруженный из серверного массива.</p>
+    <p>Список учебных курсов, загруженный из файла данных.</p>
   </div>
   <a class="button button-primary" href="/add<%= authQuery %>">Добавить курс</a>
 </section>
-
-<% if (showErrorDemo) { %>
-  <p class="demo-link"><a href="/demo-error<%= authQuery %>">Проверить страницу ошибки 500</a></p>
-<% } %>
 
 <form class="filters" method="get" action="/">
   <input type="hidden" name="auth" value="1" />
   <label>
     Поиск
-    <input type="search" name="search" value="<%= filters.search %>" placeholder="Название или преподаватель" />
+    <input type="search" name="search" value="<%= filters.search %>" placeholder="Название или преподаватель" maxlength="<%= formConstraints.search.maxLength %>" />
   </label>
   <label>
     Статус
@@ -30,6 +26,10 @@
   </label>
   <button class="button" type="submit">Применить</button>
 </form>
+
+<% if (error) { %>
+  <div class="alert" role="alert"><%= error %></div>
+<% } %>
 
 <% if (courses.length === 0) { %>
   <section class="empty-state">
