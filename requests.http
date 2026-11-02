@@ -87,6 +87,7 @@ GET {{baseUrl}}/courses/3
 GET {{baseUrl}}/mongo/courses
 
 ### MongoDB: создать курс с вложенными занятиями
+# @name createMongoCourse
 POST {{baseUrl}}/mongo/courses
 Content-Type: application/json
 
@@ -107,7 +108,7 @@ Content-Type: application/json
 }
 
 ### MongoDB: добавить вложенное занятие
-POST {{baseUrl}}/mongo/courses/MONGO_COURSE_ID/lessons
+POST {{baseUrl}}/mongo/courses/{{createMongoCourse.response.body.$.data._id}}/lessons
 Content-Type: application/json
 
 {
@@ -115,6 +116,33 @@ Content-Type: application/json
   "durationHours": 2,
   "topics": ["find", "create", "update", "delete"]
 }
+
+### MongoDB: получить созданный курс
+GET {{baseUrl}}/mongo/courses/{{createMongoCourse.response.body.$.data._id}}
+
+### MongoDB: изменить занятие внутри массива
+PATCH {{baseUrl}}/mongo/courses/{{createMongoCourse.response.body.$.data._id}}/lessons/{{createMongoCourse.response.body.$.data.lessons[0]._id}}
+Content-Type: application/json
+
+{
+  "title": "Документы, коллекции и BSON",
+  "durationHours": 3
+}
+
+### MongoDB: изменить курс
+PUT {{baseUrl}}/mongo/courses/{{createMongoCourse.response.body.$.data._id}}
+Content-Type: application/json
+
+{
+  "title": "MongoDB для LMS: практика",
+  "status": "published"
+}
+
+### MongoDB: неправильный ObjectId — ответ 400
+GET {{baseUrl}}/mongo/courses/not-an-object-id
+
+### MongoDB: удалить созданный курс вместе с занятиями
+DELETE {{baseUrl}}/mongo/courses/{{createMongoCourse.response.body.$.data._id}}
 
 ### Проверить ошибку 400
 POST {{baseUrl}}/courses

@@ -82,6 +82,39 @@ async function addLesson(req, res, next) {
   }
 }
 
+async function updateLesson(req, res, next) {
+  try {
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      return res.status(400).json({ error: 'Expected a JSON object with lesson fields' });
+    }
+
+    const changes = {};
+    for (const field of ['title', 'durationHours', 'topics']) {
+      if (Object.hasOwn(req.body, field)) {
+        changes[`lessons.$.${field}`] = req.body[field];
+      }
+    }
+
+    if (Object.keys(changes).length === 0) {
+      return res.status(400).json({ error: 'Provide title, durationHours or topics' });
+    }
+
+    const course = await MongoCourse.findOneAndUpdate(
+      { _id: req.params.id, 'lessons._id': req.params.lessonId },
+      { $set: changes },
+      { new: true, runValidators: true },
+    );
+
+    if (!course) {
+      return res.status(404).json({ error: 'MongoDB course or lesson not found' });
+    }
+
+    return res.status(200).json({ data: course });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   getCourses,
   getCourseById,
@@ -89,4 +122,5 @@ module.exports = {
   updateCourse,
   deleteCourse,
   addLesson,
+  updateLesson,
 };
