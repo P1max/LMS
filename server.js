@@ -7,7 +7,7 @@ const userRoutes = require('./routes/userRoutes');
 const mongoCourseRoutes = require('./mongo/routes/courseRoutes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 const { sequelize } = require('./models');
-const { connectMongo } = require('./mongo/db');
+const { connectMongo, isMongoConnected } = require('./mongo/db');
 const { attachChat } = require('./realtime/chat');
 
 const app = express();
@@ -21,6 +21,22 @@ app.use(cors());
 app.use('/auth', authRoutes);
 app.use('/', userRoutes);
 app.use('/mongo/courses', mongoCourseRoutes);
+
+app.get('/health', async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    const mongoReady = !process.env.MONGO_URI || isMongoConnected();
+    return res.status(mongoReady ? 200 : 503).json({
+      status: mongoReady ? 'ok' : 'degraded',
+      databases: {
+        postgres: 'connected',
+        mongo: process.env.MONGO_URI ? (mongoReady ? 'connected' : 'disconnected') : 'disabled',
+      },
+    });
+  } catch (_error) {
+    return res.status(503).json({ status: 'degraded', error: 'PostgreSQL is unavailable' });
+  }
+});
 
 app.get('/', (req, res) => {
   res.json({

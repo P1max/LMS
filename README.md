@@ -1,4 +1,35 @@
-# LMS — лабораторная работа 7
+# LMS — лабораторная работа 8
+
+Ветка `lab28` продолжает `lab27`. Backend, frontend, PostgreSQL и MongoDB запускаются через Docker Compose.
+Выбранное дополнительное задание — **healthcheck backend по `/health`**. PostgreSQL и MongoDB тоже проверяются перед запуском backend. Nginx раздаёт собранный React и проксирует API и Socket.IO.
+
+## Запуск в Docker
+
+Запустить Docker Desktop. Подготовить корневой `.env` по `.env.example`: нужны `JWT_SECRET`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`. Пароль PostgreSQL в примере предназначен для локальной демонстрации; можно задать свой пароль из букв и цифр.
+
+```bash
+docker compose up --build -d
+docker compose ps
+```
+
+Сайт: `http://localhost`. API напрямую: `http://localhost:5001`. Проверка состояния: `http://localhost:5001/health` или `http://localhost/api/health`.
+Порт `5001` выбран потому, что `5000` на macOS может занимать AirPlay. Порты можно изменить через `FRONTEND_PORT` и `BACKEND_PORT` в `.env`.
+
+Локальные команды `npm run dev` для этого режима не нужны. Адреса внутри Compose — `postgres:5432`, `mongo:27017`, `backend:3000`. Базы контейнерной версии отдельные от локальных баз; старые данные автоматически не копируются.
+
+При первом запуске backend выполняет SQL-миграции и сиды. В production имена выполненных сидов хранятся в таблице `SequelizeData`, поэтому повторный старт не дублирует курсы. Данные PostgreSQL и MongoDB сохраняются в именованных томах.
+
+```bash
+docker compose logs --tail=50 backend
+docker compose exec backend node --version
+docker compose stop
+```
+
+`stop` сохраняет контейнеры и данные. `docker compose down` удаляет контейнеры и сеть, но сохраняет именованные тома. Для обычной остановки не добавлять `-v`, иначе будут удалены тома с контейнерными данными.
+
+Образы: официальные `node:24-alpine`, `nginx:stable-alpine`, `postgres:15-alpine`, `mongo:7`. Используется стандартный Docker Hub; отдельное зеркало не требуется, если загрузка образов доступна.
+
+## Возможности ЛР7
 
 Ветка `lab27` продолжает `lab26`. Добавлен чат обсуждения курсов на Socket.IO.
 Выбранное дополнительное задание — **комнаты по курсам**: сообщения получают только участники выбранного курса.
