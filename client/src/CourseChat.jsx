@@ -108,7 +108,8 @@ export default function CourseChat() {
     setConnection({ name: name.trim(), courseId });
   }
 
-  function disconnect() {
+  function disconnect(event) {
+    event.preventDefault();
     setConnection(null);
     setJoined(false);
     setSending(false);
