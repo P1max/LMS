@@ -1,4 +1,5 @@
 const express = require('express');
+const http = require('node:http');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const courseRoutes = require('./routes/courseRoutes');
@@ -7,8 +8,11 @@ const mongoCourseRoutes = require('./mongo/routes/courseRoutes');
 const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 const { sequelize } = require('./models');
 const { connectMongo } = require('./mongo/db');
+const { attachChat } = require('./realtime/chat');
 
 const app = express();
+const server = http.createServer(app);
+attachChat(server);
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
@@ -44,7 +48,7 @@ async function startServer() {
       console.warn('MONGO_URI is not configured; MongoDB routes are disabled.');
     }
 
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server is running at http://localhost:${PORT}`);
     });
   } catch (error) {
