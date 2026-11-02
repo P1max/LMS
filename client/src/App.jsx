@@ -314,6 +314,11 @@ function App() {
               rows="2"
             />
           </label>
+          {notice && (
+            <p className="success-message wide-field" role="status">
+              {notice}
+            </p>
+          )}
           {formError && (
             <p className="error-message wide-field" role="alert">
               {formError}
@@ -360,7 +365,6 @@ function App() {
           </button>
         </div>
 
-        {notice && <p className="success-message">{notice}</p>}
         {error && (
           <div className="error-box">
             <p className="error-message">{error}</p>
