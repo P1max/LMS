@@ -1,12 +1,18 @@
 'use strict';
 
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
 const logDirectory = path.join(__dirname, '..', 'logs');
 const logFile = path.join(logDirectory, 'requests.log');
+const MAX_LOGGED_URL_LENGTH = 512;
 
-fs.mkdirSync(logDirectory, { recursive: true });
+function createLogError(cause) {
+  const error = new Error('Request log is not writable', { cause });
+  error.code = 'REQUEST_LOG_UNAVAILABLE';
+  error.status = 500;
+  return error;
+}
 
 function getSafeUrl(req) {
   const url = new URL(req.originalUrl, 'http://localhost');
@@ -17,25 +23,28 @@ function getSafeUrl(req) {
     }
   }
 
-  return `${url.pathname}${url.search}`;
+  const safeUrl = `${url.pathname}${url.search}`;
+  return safeUrl.length > MAX_LOGGED_URL_LENGTH
+    ? `${safeUrl.slice(0, MAX_LOGGED_URL_LENGTH)}…[truncated]`
+    : safeUrl;
 }
 
-function requestLogger(req, res, next) {
-  const startedAt = Date.now();
+async function requestLogger(req, res, next) {
+  const timestamp = new Date().toISOString();
+  const line = `${timestamp} ${req.method} ${getSafeUrl(req)}\n`;
 
-  res.on('finish', () => {
-    const timestamp = new Date(startedAt).toISOString();
-    const duration = Date.now() - startedAt;
-    const line = `${timestamp} ${req.method} ${getSafeUrl(req)} ${res.statusCode} ${duration}ms\n`;
+  try {
+    await fs.mkdir(logDirectory, { recursive: true });
+    await fs.appendFile(logFile, line, 'utf8');
+    console.log(line.trimEnd());
+    return next();
+  } catch (error) {
+    if (req.method === 'GET' && req.path === '/styles.css') {
+      return next();
+    }
 
-    fs.appendFile(logFile, line, (error) => {
-      if (error) {
-        console.error('Failed to write request log:', error);
-      }
-    });
-  });
-
-  next();
+    return next(createLogError(error));
+  }
 }
 
 module.exports = requestLogger;

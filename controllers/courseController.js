@@ -1,12 +1,19 @@
 const { Op } = require('sequelize');
 const { Course } = require('../models');
+const COURSE_CONSTRAINTS = require('../config/courseConstraints.json');
+const validateSearchQuery = require('../utils/searchQuery');
+const validateStatusQuery = require('../utils/validateStatusQuery');
 
-const ALLOWED_STATUSES = ['draft', 'published', 'archived'];
+const ALLOWED_STATUSES = COURSE_CONSTRAINTS.allowedStatuses;
 const REQUIRED_FIELDS = ['title', 'description', 'teacher', 'durationHours'];
 
 function parseId(rawId) {
+  if (typeof rawId !== 'string' || rawId.length > 16 || !/^\d+$/.test(rawId)) {
+    return null;
+  }
+
   const id = Number(rawId);
-  return Number.isInteger(id) && id > 0 ? id : null;
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 function validateCourse(body, { requireAllFields }) {
@@ -31,13 +38,26 @@ function validateCourse(body, { requireAllFields }) {
     ) {
       return `Field "${field}" must be a non-empty string`;
     }
+
+    if (
+      body[field] !== undefined &&
+      body[field].length > COURSE_CONSTRAINTS.textFields[field].maxLength
+    ) {
+      return `Field "${field}" must not exceed ${COURSE_CONSTRAINTS.textFields[field].maxLength} characters`;
+    }
   }
 
   if (
     body.durationHours !== undefined &&
-    (typeof body.durationHours !== 'number' || body.durationHours <= 0)
+    (typeof body.durationHours !== 'number' ||
+      !Number.isFinite(body.durationHours) ||
+      body.durationHours < Math.max(1, COURSE_CONSTRAINTS.durationHours.minimum) ||
+      body.durationHours > COURSE_CONSTRAINTS.durationHours.maximum)
   ) {
-    return 'Field "durationHours" must be a positive number';
+    return (
+      `Field "durationHours" must be between ${Math.max(1, COURSE_CONSTRAINTS.durationHours.minimum)} ` +
+      `and ${COURSE_CONSTRAINTS.durationHours.maximum}`
+    );
   }
 
   if (body.status !== undefined && !ALLOWED_STATUSES.includes(body.status)) {
@@ -73,18 +93,31 @@ function getCourseData(body) {
 
 async function getCourses(req, res, next) {
   try {
-    const where = {};
+    const { error: searchError, search } = validateSearchQuery(
+      req.query.search,
+      COURSE_CONSTRAINTS.search.maxLength,
+    );
+    const { error: statusError, status } = validateStatusQuery(
+      req.query.status,
+      ALLOWED_STATUSES,
+    );
 
-    if (req.query.status) {
-      where.status = req.query.status;
+    if (searchError || statusError) {
+      return res.status(400).json({ error: searchError || statusError });
     }
 
-    if (req.query.search) {
-      const search = `%${req.query.search}%`;
+    const where = {};
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (search) {
+      const pattern = `%${search}%`;
       where[Op.or] = [
-        { title: { [Op.iLike]: search } },
-        { description: { [Op.iLike]: search } },
-        { teacher: { [Op.iLike]: search } },
+        { title: { [Op.iLike]: pattern } },
+        { description: { [Op.iLike]: pattern } },
+        { teacher: { [Op.iLike]: pattern } },
       ];
     }
 

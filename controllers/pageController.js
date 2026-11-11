@@ -1,9 +1,13 @@
 'use strict';
 
 const courseModel = require('../models/courseModel');
+const COURSE_CONSTRAINTS = require('../config/courseConstraints.json');
+const validateSearchQuery = require('../utils/searchQuery');
+const validateStatusQuery = require('../utils/validateStatusQuery');
 
-const ALLOWED_STATUSES = ['draft', 'published', 'archived'];
-const REQUIRED_FIELDS = ['title', 'description', 'teacher', 'durationHours'];
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 function formatDate(value) {
   return new Intl.DateTimeFormat('ru-RU', {
@@ -24,29 +28,66 @@ function getPageData(req) {
     user: req.user,
     authQuery: '?auth=1',
     formatDate,
+    formConstraints: COURSE_CONSTRAINTS,
   };
 }
 
-function renderHome(req, res) {
-  const courses = courseModel.getAll({
-    status: req.query.status,
-    search: req.query.search,
+async function renderHome(req, res) {
+  const { error, search } = validateSearchQuery(
+    req.query.search,
+    COURSE_CONSTRAINTS.search.maxLength,
+  );
+  const { error: statusError, status } = validateStatusQuery(
+    req.query.status,
+    COURSE_CONSTRAINTS.allowedStatuses,
+  );
+
+  if (error || statusError) {
+    return res.status(400).render('index', {
+      ...getPageData(req),
+      title: 'Курсы',
+      courses: [],
+      error: error || statusError,
+      filters: {
+        search: '',
+        status,
+      },
+    });
+  }
+
+  const courses = await courseModel.getAll({
+    status,
+    search,
   });
 
-  return res.render('index', {
+  return res.status(200).render('index', {
     ...getPageData(req),
     title: 'Курсы',
     courses,
+    error: null,
     filters: {
-      search: req.query.search || '',
-      status: req.query.status || '',
+      search,
+      status,
     },
   });
 }
 
-function renderCourse(req, res) {
-  const id = Number(req.params.id);
-  const course = Number.isInteger(id) && id > 0 ? courseModel.getById(id) : null;
+function parseCourseId(rawId) {
+  if (typeof rawId !== 'string' || rawId.length > 16 || !/^\d+$/.test(rawId)) {
+    return null;
+  }
+
+  const id = Number(rawId);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+async function renderCourse(req, res) {
+  const id = parseCourseId(req.params.id);
+  if (!id) {
+    return renderErrorPage(res, 404, 'Указан некорректный идентификатор курса');
+  }
+
+  const course = await courseModel.getById(id);
 
   if (!course) {
     return renderErrorPage(res, 404, `Курс с идентификатором ${req.params.id} не найден`);
@@ -68,50 +109,116 @@ function renderAddForm(req, res) {
   });
 }
 
-function validateForm(body) {
+function validateForm(body = {}) {
+  const durationInput =
+    typeof body.durationHours === 'string'
+      ? body.durationHours.trim()
+      : String(body.durationHours ?? '').trim();
+  const normalizedDurationInput = durationInput.replace(',', '.');
+  const validDurationFormat = /^\d+(?:[.,]\d+)?$/.test(durationInput);
+  const status = body.status === undefined ? 'draft' : body.status;
   const data = {
-    title: String(body.title || '').trim(),
-    description: String(body.description || '').trim(),
-    teacher: String(body.teacher || '').trim(),
-    durationHours: Number(body.durationHours),
-    status: body.status || 'draft',
+    title: normalizeText(body.title),
+    description: normalizeText(body.description),
+    teacher: normalizeText(body.teacher),
+    durationHours: validDurationFormat ? Number(normalizedDurationInput) : NaN,
+    status,
   };
-
-  const missingField = REQUIRED_FIELDS.find((field) => {
-    if (field === 'durationHours') {
-      return !body.durationHours;
-    }
-    return !data[field];
-  });
+  const textFields = COURSE_CONSTRAINTS.textFields;
+  const form = {
+    title:
+      data.title.length <= textFields.title.maxLength ? data.title : '',
+    description:
+      data.description.length <= textFields.description.maxLength
+        ? data.description
+        : '',
+    teacher:
+      data.teacher.length <= textFields.teacher.maxLength ? data.teacher : '',
+    durationHours:
+      durationInput.length <= COURSE_CONSTRAINTS.durationHours.maxInputLength
+        ? durationInput
+        : '',
+    status:
+      typeof status === 'string' && COURSE_CONSTRAINTS.allowedStatuses.includes(status)
+        ? status
+        : 'draft',
+  };
+  const missingField = Object.keys(textFields).find((field) => !data[field]);
 
   if (missingField) {
-    return { error: `Поле «${missingField}» обязательно для заполнения`, data };
+    return {
+      error: `Поле «${textFields[missingField].label}» обязательно для заполнения`,
+      data,
+      form,
+    };
   }
 
-  if (!Number.isFinite(data.durationHours) || data.durationHours <= 0) {
-    return { error: 'Продолжительность должна быть положительным числом', data };
+  for (const [field, constraints] of Object.entries(textFields)) {
+    if (data[field].length > constraints.maxLength) {
+      return {
+        error: `Поле «${constraints.label}» не должно превышать ${constraints.maxLength} символов`,
+        data,
+        form,
+      };
+    }
   }
 
-  if (!ALLOWED_STATUSES.includes(data.status)) {
-    return { error: 'Выбран недопустимый статус курса', data };
+  if (!durationInput) {
+    return { error: 'Поле «Продолжительность, часов» обязательно для заполнения', data, form };
   }
 
-  return { error: null, data };
+  if (durationInput.length > COURSE_CONSTRAINTS.durationHours.maxInputLength) {
+    return {
+      error: `Продолжительность не должна превышать ${COURSE_CONSTRAINTS.durationHours.maxInputLength} символов`,
+      data,
+      form,
+    };
+  }
+
+  if (!validDurationFormat) {
+    return {
+      error: 'Продолжительность должна содержать только цифры и, при необходимости, десятичный разделитель',
+      data,
+      form,
+    };
+  }
+
+  if (
+    !Number.isFinite(data.durationHours) ||
+    data.durationHours < COURSE_CONSTRAINTS.durationHours.minimum ||
+    data.durationHours > COURSE_CONSTRAINTS.durationHours.maximum
+  ) {
+    return {
+      error: `Продолжительность должна быть числом от ${COURSE_CONSTRAINTS.durationHours.minimum} до ${COURSE_CONSTRAINTS.durationHours.maximum} часов`,
+      data,
+      form,
+    };
+  }
+
+  if (!COURSE_CONSTRAINTS.allowedStatuses.includes(data.status)) {
+    return {
+      error: 'Поле «Статус» содержит недопустимое значение',
+      data,
+      form,
+    };
+  }
+
+  return { error: null, data, form };
 }
 
-function addCourse(req, res) {
+async function addCourse(req, res) {
   const result = validateForm(req.body);
 
   if (result.error) {
     return res.status(400).render('add', {
       ...getPageData(req),
       title: 'Добавление курса',
-      form: req.body,
+      form: result.form,
       error: result.error,
     });
   }
 
-  courseModel.create(result.data);
+  await courseModel.create(result.data);
   return res.redirect('/?auth=1');
 }
 

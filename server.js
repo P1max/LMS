@@ -16,8 +16,8 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(requestLogger);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '8kb' }));
+app.use(express.urlencoded({ extended: true, limit: '8kb', parameterLimit: 10 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/auth', authRoutes);

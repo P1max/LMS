@@ -5,14 +5,14 @@ const lessonModel = require('../models/lessonModel');
 const { parseId, validatePayload } = require('../utils/validation');
 
 const courseSchema = {
-  title: { type: 'string', required: true },
-  description: { type: 'string', required: true },
-  teacher: { type: 'string', required: true },
-  durationHours: { type: 'positiveNumber', required: true },
+  title: { type: 'string', required: true, maxLength: 30 },
+  description: { type: 'string', required: true, maxLength: 50 },
+  teacher: { type: 'string', required: true, maxLength: 25 },
+  durationHours: { type: 'positiveNumber', required: true, minimum: 0, maximum: 10000 },
   status: { type: 'string', values: ['draft', 'published', 'archived'] },
 };
 
-function getCourses(req, res) {
+async function getCourses(req, res, next) {
   const { status, search } = req.query;
   if (status !== undefined && !courseSchema.status.values.includes(status)) {
     return res.status(400).json({ error: 'Invalid course status filter' });
@@ -20,26 +20,37 @@ function getCourses(req, res) {
   if (search !== undefined && typeof search !== 'string') {
     return res.status(400).json({ error: 'Search must be a string' });
   }
+  if (typeof search === 'string' && search.length > 100) {
+    return res.status(400).json({ error: 'Search must not exceed 100 characters' });
+  }
 
-  const courses = courseModel.getAll({ status, search });
-  return res.status(200).json({ count: courses.length, data: courses });
+  try {
+    const courses = await courseModel.getAll({ status, search });
+    return res.status(200).json({ count: courses.length, data: courses });
+  } catch (error) {
+    return next(error);
+  }
 }
 
-function getCourseById(req, res) {
+async function getCourseById(req, res, next) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: 'Course ID must be a positive integer' });
   }
 
-  const course = courseModel.getById(id);
-  if (!course) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
+  try {
+    const course = await courseModel.getById(id);
+    if (!course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
 
-  return res.status(200).json({ data: course });
+    return res.status(200).json({ data: course });
+  } catch (error) {
+    return next(error);
+  }
 }
 
-function createCourse(req, res) {
+async function createCourse(req, res, next) {
   const validationError = validatePayload(req.body, courseSchema, {
     requireAll: true,
   });
@@ -47,11 +58,15 @@ function createCourse(req, res) {
     return res.status(400).json({ error: validationError });
   }
 
-  const course = courseModel.create(req.body);
-  return res.status(201).location(`/api/v1/courses/${course.id}`).json({ data: course });
+  try {
+    const course = await courseModel.create(req.body);
+    return res.status(201).location(`/api/v1/courses/${course.id}`).json({ data: course });
+  } catch (error) {
+    return next(error);
+  }
 }
 
-function updateCourse(req, res) {
+async function updateCourse(req, res, next) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: 'Course ID must be a positive integer' });
@@ -64,15 +79,19 @@ function updateCourse(req, res) {
     return res.status(400).json({ error: validationError });
   }
 
-  const course = courseModel.update(id, req.body);
-  if (!course) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
+  try {
+    const course = await courseModel.update(id, req.body);
+    if (!course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
 
-  return res.status(200).json({ data: course });
+    return res.status(200).json({ data: course });
+  } catch (error) {
+    return next(error);
+  }
 }
 
-function patchCourse(req, res) {
+async function patchCourse(req, res, next) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: 'Course ID must be a positive integer' });
@@ -83,29 +102,37 @@ function patchCourse(req, res) {
     return res.status(400).json({ error: validationError });
   }
 
-  const course = courseModel.patch(id, req.body);
-  if (!course) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
+  try {
+    const course = await courseModel.patch(id, req.body);
+    if (!course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
 
-  return res.status(200).json({ data: course });
+    return res.status(200).json({ data: course });
+  } catch (error) {
+    return next(error);
+  }
 }
 
-function deleteCourse(req, res) {
+async function deleteCourse(req, res, next) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: 'Course ID must be a positive integer' });
   }
 
-  if (!courseModel.getById(id)) {
-    return res.status(404).json({ error: 'Course not found' });
-  }
-  if (lessonModel.hasForCourse(id)) {
-    return res.status(409).json({ error: 'Course has lessons and cannot be deleted' });
-  }
+  try {
+    if (!(await courseModel.getById(id))) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+    if (lessonModel.hasForCourse(id)) {
+      return res.status(409).json({ error: 'Course has lessons and cannot be deleted' });
+    }
 
-  courseModel.remove(id);
-  return res.status(204).send();
+    await courseModel.remove(id);
+    return res.status(204).send();
+  } catch (error) {
+    return next(error);
+  }
 }
 
 module.exports = {

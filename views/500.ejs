@@ -9,7 +9,7 @@
   <body>
     <main class="centered-page">
       <section class="error-card">
-        <p class="error-code">500</p>
+        <p class="error-code"><%= statusCode || 500 %></p>
         <h1><%= title %></h1>
         <p><%= message %></p>
         <a class="button button-primary" href="/?auth=1">На главную</a>

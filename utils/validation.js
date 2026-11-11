@@ -1,7 +1,7 @@
 'use strict';
 
 function parseId(value) {
-  if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+  if (typeof value !== 'string' || value.length > 16 || !/^\d+$/.test(value)) {
     return null;
   }
 
@@ -41,6 +41,9 @@ function validatePayload(body, schema, { requireAll = false } = {}) {
       if (typeof value !== 'string' || value.trim() === '') {
         return `Field "${field}" must be a non-empty string`;
       }
+      if (rules.maxLength && value.length > rules.maxLength) {
+        return `Field "${field}" must not exceed ${rules.maxLength} characters`;
+      }
     } else if (rules.type === 'email') {
       if (
         typeof value !== 'string' ||
@@ -48,13 +51,25 @@ function validatePayload(body, schema, { requireAll = false } = {}) {
       ) {
         return `Field "${field}" must be a valid email address`;
       }
+      if (rules.maxLength && value.length > rules.maxLength) {
+        return `Field "${field}" must not exceed ${rules.maxLength} characters`;
+      }
     } else if (rules.type === 'positiveNumber') {
-      if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
-        return `Field "${field}" must be a positive number`;
+      if (
+        typeof value !== 'number' ||
+        !Number.isFinite(value) ||
+        value < (rules.minimum ?? Number.MIN_VALUE) ||
+        (rules.maximum !== undefined && value > rules.maximum)
+      ) {
+        return `Field "${field}" must be between ${rules.minimum ?? 0} and ${rules.maximum ?? 'the allowed limit'}`;
       }
     } else if (rules.type === 'positiveInteger') {
-      if (!Number.isSafeInteger(value) || value <= 0) {
-        return `Field "${field}" must be a positive integer`;
+      if (
+        !Number.isSafeInteger(value) ||
+        value < (rules.minimum ?? 1) ||
+        (rules.maximum !== undefined && value > rules.maximum)
+      ) {
+        return `Field "${field}" must be an integer between ${rules.minimum ?? 1} and ${rules.maximum ?? 'the allowed limit'}`;
       }
     }
 

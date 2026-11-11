@@ -6,14 +6,14 @@ const { parseId, validatePayload } = require('../utils/validation');
 
 const lessonSchema = {
   courseId: { type: 'positiveInteger', required: true },
-  title: { type: 'string', required: true },
-  description: { type: 'string', required: true },
-  orderNumber: { type: 'positiveInteger', required: true },
-  durationMinutes: { type: 'positiveInteger', required: true },
+  title: { type: 'string', required: true, maxLength: 100 },
+  description: { type: 'string', required: true, maxLength: 500 },
+  orderNumber: { type: 'positiveInteger', required: true, maximum: 10000 },
+  durationMinutes: { type: 'positiveInteger', required: true, maximum: 10000 },
 };
 
-function validateCourseReference(courseId) {
-  return courseModel.getById(courseId)
+async function validateCourseReference(courseId) {
+  return (await courseModel.getById(courseId))
     ? null
     : `Course with ID ${courseId} not found`;
 }
@@ -31,8 +31,11 @@ function getLessons(req, res) {
   if (search !== undefined && typeof search !== 'string') {
     return res.status(400).json({ error: 'Search must be a string' });
   }
+  if (typeof search === 'string' && search.length > 100) {
+    return res.status(400).json({ error: 'Search must not exceed 100 characters' });
+  }
 
-  const lessons = lessonModel.getAll({ courseId: parsedCourseId, search });
+  const lessons = lessonModel.getAll({ courseId: parsedCourseId, search: search?.trim() });
   return res.status(200).json({ count: lessons.length, data: lessons });
 }
 
@@ -50,7 +53,7 @@ function getLessonById(req, res) {
   return res.status(200).json({ data: lesson });
 }
 
-function createLesson(req, res) {
+async function createLesson(req, res) {
   const validationError = validatePayload(req.body, lessonSchema, {
     requireAll: true,
   });
@@ -58,7 +61,7 @@ function createLesson(req, res) {
     return res.status(400).json({ error: validationError });
   }
 
-  const referenceError = validateCourseReference(req.body.courseId);
+  const referenceError = await validateCourseReference(req.body.courseId);
   if (referenceError) {
     return res.status(400).json({ error: referenceError });
   }
@@ -67,7 +70,7 @@ function createLesson(req, res) {
   return res.status(201).location(`/api/v1/lessons/${lesson.id}`).json({ data: lesson });
 }
 
-function updateLesson(req, res) {
+async function updateLesson(req, res) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: 'Lesson ID must be a positive integer' });
@@ -80,7 +83,7 @@ function updateLesson(req, res) {
     return res.status(400).json({ error: validationError });
   }
 
-  const referenceError = validateCourseReference(req.body.courseId);
+  const referenceError = await validateCourseReference(req.body.courseId);
   if (referenceError) {
     return res.status(400).json({ error: referenceError });
   }
@@ -93,7 +96,7 @@ function updateLesson(req, res) {
   return res.status(200).json({ data: lesson });
 }
 
-function patchLesson(req, res) {
+async function patchLesson(req, res) {
   const id = parseId(req.params.id);
   if (!id) {
     return res.status(400).json({ error: 'Lesson ID must be a positive integer' });
@@ -110,7 +113,7 @@ function patchLesson(req, res) {
   }
 
   const courseId = req.body.courseId || currentLesson.courseId;
-  const referenceError = validateCourseReference(courseId);
+  const referenceError = await validateCourseReference(courseId);
   if (referenceError) {
     return res.status(400).json({ error: referenceError });
   }

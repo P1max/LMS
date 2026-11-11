@@ -10,6 +10,10 @@
   box-sizing: border-box;
 }
 
+html {
+  overscroll-behavior-y: none;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -28,6 +32,9 @@ a {
 }
 
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   background: #fff;
   border-bottom: 1px solid #e1e7f0;
 }
@@ -153,6 +160,12 @@ label {
   font-weight: 700;
 }
 
+.field-hint {
+  color: #728097;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
 input,
 textarea,
 select {
@@ -194,6 +207,8 @@ select:focus {
   flex-direction: column;
   gap: 16px;
   padding: 22px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .course-card p {
@@ -263,6 +278,12 @@ select:focus {
 
 .course-meta dd,
 .detail-meta dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.course-meta dd,
+.detail-meta dd {
   margin: 0;
   font-weight: 700;
   text-align: right;
@@ -283,6 +304,11 @@ select:focus {
 .form-card {
   max-width: 760px;
   padding: 30px;
+}
+
+.detail-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .detail-card h1 {

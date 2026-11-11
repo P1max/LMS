@@ -4,9 +4,9 @@ const studentModel = require('../models/studentModel');
 const { parseId, validatePayload } = require('../utils/validation');
 
 const studentSchema = {
-  fullName: { type: 'string', required: true },
-  email: { type: 'email', required: true },
-  group: { type: 'string', required: true },
+  fullName: { type: 'string', required: true, maxLength: 80 },
+  email: { type: 'email', required: true, maxLength: 254 },
+  group: { type: 'string', required: true, maxLength: 30 },
 };
 
 function getStudents(req, res) {
@@ -14,11 +14,17 @@ function getStudents(req, res) {
   if (group !== undefined && typeof group !== 'string') {
     return res.status(400).json({ error: 'Group must be a string' });
   }
+  if (typeof group === 'string' && group.length > 30) {
+    return res.status(400).json({ error: 'Group must not exceed 30 characters' });
+  }
   if (search !== undefined && typeof search !== 'string') {
     return res.status(400).json({ error: 'Search must be a string' });
   }
+  if (typeof search === 'string' && search.length > 100) {
+    return res.status(400).json({ error: 'Search must not exceed 100 characters' });
+  }
 
-  const students = studentModel.getAll({ group, search });
+  const students = studentModel.getAll({ group: group?.trim(), search: search?.trim() });
   return res.status(200).json({ count: students.length, data: students });
 }
 
