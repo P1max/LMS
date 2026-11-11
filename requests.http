@@ -91,7 +91,7 @@ GET {{baseUrl}}/api/v1/courses?status=published&search=web
 ### ПЗ2: получить курс по ID
 GET {{baseUrl}}/api/v1/courses/1
 
-### ПЗ2: создать курс (при чистом запуске его ID будет 3)
+### ПЗ2: создать курс (на текущих данных он получит ID 5)
 POST {{baseUrl}}/api/v1/courses
 Content-Type: application/json
 
@@ -104,7 +104,7 @@ Content-Type: application/json
 }
 
 ### ПЗ2: полностью заменить созданный курс
-PUT {{baseUrl}}/api/v1/courses/3
+PUT {{baseUrl}}/api/v1/courses/5
 Content-Type: application/json
 
 {
@@ -116,7 +116,7 @@ Content-Type: application/json
 }
 
 ### ПЗ2: изменить только описание курса
-PATCH {{baseUrl}}/api/v1/courses/3
+PATCH {{baseUrl}}/api/v1/courses/5
 Content-Type: application/json
 
 {
@@ -124,7 +124,7 @@ Content-Type: application/json
 }
 
 ### ПЗ2: удалить созданный курс
-DELETE {{baseUrl}}/api/v1/courses/3
+DELETE {{baseUrl}}/api/v1/courses/5
 
 ### ПЗ2: список студентов и поиск
 GET {{baseUrl}}/api/v1/students?search=Алексей
