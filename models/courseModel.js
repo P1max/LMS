@@ -161,6 +161,23 @@ async function update(id, data) {
   });
 }
 
+async function patch(id, data) {
+  return changeCourses((courses) => {
+    const course = courses.find((item) => item.id === id);
+
+    if (!course) {
+      return { value: null, changed: false };
+    }
+
+    for (const [key, value] of Object.entries(data)) {
+      course[key] = typeof value === 'string' ? value.trim() : value;
+    }
+
+    course.updatedAt = new Date().toISOString();
+    return { value: course, changed: true };
+  });
+}
+
 async function remove(id) {
   return changeCourses((courses) => {
     const index = courses.findIndex((course) => course.id === id);
@@ -174,4 +191,4 @@ async function remove(id) {
   });
 }
 
-module.exports = { getAll, getById, create, update, remove };
+module.exports = { getAll, getById, create, update, patch, remove };
