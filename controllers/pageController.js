@@ -3,6 +3,7 @@
 const courseModel = require('../models/courseModel');
 const COURSE_CONSTRAINTS = require('../config/courseConstraints.json');
 const validateSearchQuery = require('../utils/searchQuery');
+const validateStatusQuery = require('../utils/validateStatusQuery');
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
@@ -36,26 +37,57 @@ async function renderHome(req, res) {
     req.query.search,
     COURSE_CONSTRAINTS.search.maxLength,
   );
+  const { error: statusError, status } = validateStatusQuery(
+    req.query.status,
+    COURSE_CONSTRAINTS.allowedStatuses,
+  );
+
+  if (error || statusError) {
+    return res.status(400).render('index', {
+      ...getPageData(req),
+      title: 'Курсы',
+      courses: [],
+      error: error || statusError,
+      filters: {
+        search: '',
+        status,
+      },
+    });
+  }
+
   const courses = await courseModel.getAll({
-    status: req.query.status,
-    search: error ? '' : search,
+    status,
+    search,
   });
 
-  return res.status(error ? 400 : 200).render('index', {
+  return res.status(200).render('index', {
     ...getPageData(req),
     title: 'Курсы',
     courses,
-    error,
+    error: null,
     filters: {
-      search: error ? '' : search,
-      status: req.query.status || '',
+      search,
+      status,
     },
   });
 }
 
+function parseCourseId(rawId) {
+  if (typeof rawId !== 'string' || rawId.length > 16 || !/^\d+$/.test(rawId)) {
+    return null;
+  }
+
+  const id = Number(rawId);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
 async function renderCourse(req, res) {
-  const id = Number(req.params.id);
-  const course = Number.isInteger(id) && id > 0 ? await courseModel.getById(id) : null;
+  const id = parseCourseId(req.params.id);
+  if (!id) {
+    return renderErrorPage(res, 404, 'Указан некорректный идентификатор курса');
+  }
+
+  const course = await courseModel.getById(id);
 
   if (!course) {
     return renderErrorPage(res, 404, `Курс с идентификатором ${req.params.id} не найден`);
@@ -84,7 +116,7 @@ function validateForm(body = {}) {
       : String(body.durationHours ?? '').trim();
   const normalizedDurationInput = durationInput.replace(',', '.');
   const validDurationFormat = /^\d+(?:[.,]\d+)?$/.test(durationInput);
-  const status = typeof body.status === 'string' ? body.status : 'draft';
+  const status = body.status === undefined ? 'draft' : body.status;
   const data = {
     title: normalizeText(body.title),
     description: normalizeText(body.description),
@@ -92,9 +124,25 @@ function validateForm(body = {}) {
     durationHours: validDurationFormat ? Number(normalizedDurationInput) : NaN,
     status,
   };
-  const form = { ...data, durationHours: durationInput };
-
   const textFields = COURSE_CONSTRAINTS.textFields;
+  const form = {
+    title:
+      data.title.length <= textFields.title.maxLength ? data.title : '',
+    description:
+      data.description.length <= textFields.description.maxLength
+        ? data.description
+        : '',
+    teacher:
+      data.teacher.length <= textFields.teacher.maxLength ? data.teacher : '',
+    durationHours:
+      durationInput.length <= COURSE_CONSTRAINTS.durationHours.maxInputLength
+        ? durationInput
+        : '',
+    status:
+      typeof status === 'string' && COURSE_CONSTRAINTS.allowedStatuses.includes(status)
+        ? status
+        : 'draft',
+  };
   const missingField = Object.keys(textFields).find((field) => !data[field]);
 
   if (missingField) {
@@ -148,7 +196,11 @@ function validateForm(body = {}) {
   }
 
   if (!COURSE_CONSTRAINTS.allowedStatuses.includes(data.status)) {
-    return { error: 'Выбран недопустимый статус курса', data, form };
+    return {
+      error: 'Поле «Статус» содержит недопустимое значение',
+      data,
+      form,
+    };
   }
 
   return { error: null, data, form };

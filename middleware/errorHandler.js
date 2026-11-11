@@ -21,15 +21,17 @@ function getPublicErrorDetails(error) {
       return {
         title: 'Файл данных недоступен',
         message: [
-          'Не удалось получить доступ к файлу data/courses.json.',
-          'Проверьте, что это доступный для чтения файл, а не каталог.',
+          'Не удалось прочитать или сохранить данные в файле data/courses.json.',
+          'Убедитесь, что путь не занят каталогом и у приложения есть права чтения и записи.',
         ].join(' '),
       };
     case 'COURSE_DATA_INVALID':
       return {
         title: 'Файл данных повреждён',
-        message:
-          'Не удалось обработать данные курсов. Проверьте формат JSON и наличие массива записей.',
+        message: [
+          'Не удалось обработать данные курсов.',
+          'Проверьте формат JSON и наличие массива записей.',
+        ].join(' '),
       };
     case 'REQUEST_LOG_UNAVAILABLE':
       return {
@@ -53,11 +55,34 @@ function errorHandler(err, req, res, _next) {
     return res.status(400).json({ error: 'Invalid JSON in request body' });
   }
 
+  const isOversizedRequest =
+    err.status === 413 ||
+    err.type === 'entity.too.large' ||
+    err.type === 'parameters.too.many';
+
+  if (isOversizedRequest) {
+    const message = [
+      'Размер запроса или число полей превышает допустимый предел.',
+      'Сократите данные и повторите отправку.',
+    ].join(' ');
+
+    if (!isApiRequest(req) && req.accepts('html')) {
+      return res.status(413).render('500', {
+        statusCode: 413,
+        title: 'Слишком большой запрос',
+        message,
+      });
+    }
+
+    return res.status(413).json({ error: message });
+  }
+
   console.error(err);
   const publicDetails = getPublicErrorDetails(err);
 
   if (!isApiRequest(req) && req.accepts('html')) {
     return res.status(500).render('500', {
+      statusCode: 500,
       title: publicDetails?.title || 'Ошибка сервера',
       message:
         publicDetails?.message || 'Во время обработки запроса произошла ошибка.',

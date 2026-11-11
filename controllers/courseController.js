@@ -3,12 +3,17 @@
 const courseModel = require('../models/courseModel');
 const COURSE_CONSTRAINTS = require('../config/courseConstraints.json');
 const validateSearchQuery = require('../utils/searchQuery');
+const validateStatusQuery = require('../utils/validateStatusQuery');
 
 const REQUIRED_FIELDS = ['title', 'description', 'teacher', 'durationHours'];
 
 function parseId(rawId) {
+  if (typeof rawId !== 'string' || rawId.length > 16 || !/^\d+$/.test(rawId)) {
+    return null;
+  }
+
   const id = Number(rawId);
-  return Number.isInteger(id) && id > 0 ? id : null;
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 function validateCourse(body, { requireAllFields }) {
@@ -67,13 +72,17 @@ async function getCourses(req, res) {
     req.query.search,
     COURSE_CONSTRAINTS.search.maxLength,
   );
+  const { error: statusError, status } = validateStatusQuery(
+    req.query.status,
+    COURSE_CONSTRAINTS.allowedStatuses,
+  );
 
-  if (error) {
-    return res.status(400).json({ error });
+  if (error || statusError) {
+    return res.status(400).json({ error: error || statusError });
   }
 
   const courses = await courseModel.getAll({
-    status: req.query.status,
+    status,
     search,
   });
 
