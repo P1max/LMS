@@ -26,7 +26,17 @@ async function readCourses() {
   let fileContent;
 
   try {
-    fileContent = await fs.readFile(coursesFile, 'utf8');
+    try {
+      fileContent = await fs.readFile(coursesFile, 'utf8');
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
+
+      await fs.mkdir(path.dirname(coursesFile), { recursive: true });
+      await fs.writeFile(coursesFile, '[]\n', { encoding: 'utf8', flag: 'wx' });
+      fileContent = await fs.readFile(coursesFile, 'utf8');
+    }
   } catch (error) {
     if (FILE_SYSTEM_ERROR_CODES.has(error.code)) {
       throw createCourseDataError(
